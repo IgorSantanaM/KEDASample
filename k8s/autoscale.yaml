@@ -1,0 +1,53 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: test-deploy
+  labels:
+    app.kubernetes.io/name: test-deploy
+    app.kubernetes.io/part-of: test
+spec:
+  pollingInterval: 15
+  cooldownPeriod: 600
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: test-deploy
+  minReplicaCount: 4
+  maxReplicaCount: 20
+  fallback:
+    failureThreshold: 3
+    replicas: 4
+  advanced:
+    horizontalPodAutoscaledConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 15
+          - type: Pods
+            value: 4
+            periodSeconds: 15
+          selectPolicy: Max
+        scaleDown:
+          stabilizationWindowSeconds: 600
+          policies:
+          - type: Percent
+            value: 25
+            periodoSeconds: 60
+          selectPolicy: Min
+  triggers:
+  - type: prometheus
+    metricType: AvarageValue
+    metadata: 
+      serverAddress: http://robusta-kube-prometheus-st-prometheus.monitoring.svc.cluster.local:9090
+      query: sum(rate(nginx_ingress_controller_requests{exported_namespace="staging",ingress="test-ingress",exported_service="test-service"}[1m])) or vector(0)
+      threshold: "100"
+      activationThreshold: "1"
+      ignoreNullValues: "false"
+      timeout: "3s"
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "70"

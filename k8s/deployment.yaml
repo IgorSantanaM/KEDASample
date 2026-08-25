@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name:  test-deploy
+  labels:
+    name:  test-deploy
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name:  test-deploy
+    spec:
+      containers:
+      - image:  ipedrazas/docmock
+        name:  test-deploy
+        resources:
+          requests:
+            cpu: "20m"
+            memory: "55M"
+          limits: 
+            cpu: 1
+            memory: "100M"
+      restartPolicy: Always
+      imagePullPolicy: Always
